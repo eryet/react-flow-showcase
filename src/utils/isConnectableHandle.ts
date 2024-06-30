@@ -1,0 +1,3 @@
+const isConnectableHandle = () => {};
+
+export { isConnectableHandle };
