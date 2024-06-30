@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/flow/:path*",
+      "destination": "/:path*"
+    }
+  ]
+}
