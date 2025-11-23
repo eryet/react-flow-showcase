@@ -40,7 +40,6 @@ const DRAGGABLE_NODES: DraggableNode[] = [
 // ! https://github.com/xyflow/xyflow/issues/1323
 const Sidebar = ({
   isSidebarVisible,
-  setIsSidebarVisible,
   onInitialRestore,
   onSave,
   onRestore,
