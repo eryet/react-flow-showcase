@@ -4,7 +4,7 @@ import "@xyflow/react/dist/style.css";
 
 export default function App() {
   return (
-    <div className='flex flex-col flex-grow h-full md:flex-row dndflow'>
+    <div className='flex flex-row flex-grow h-full dndflow'>
       <ReactFlowProvider>
         <Flow />
       </ReactFlowProvider>

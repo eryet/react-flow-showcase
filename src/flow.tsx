@@ -35,6 +35,7 @@ export default function Flow() {
   const [variant, setVariant] = useState<BackgroundVariant>(
     BackgroundVariant.Dots
   );
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [nodes, setNodes] = useNodesState<Node>(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] =
@@ -136,29 +137,42 @@ export default function Flow() {
           <Background variant={variant} />
           <MiniMap />
           <Controls />
-          <Panel position='top-right'>
-            <label
-              htmlFor='background-variant'
-              className='block mb-2 text-sm font-medium text-gray-90'
-            >
-              選擇背景樣式
-            </label>
-            <select
-              id='background-variant'
+          <Panel position='top-right' className='flex gap-2 items-end'>
+            <div>
+              <label
+                htmlFor='background-variant'
+                className='block mb-2 text-sm font-medium text-gray-90'
+              >
+                選擇背景樣式
+              </label>
+              <select
+                id='background-variant'
+                className={clsx(
+                  "bg-white border border-gray-800 font-bold",
+                  "block w-full p-2.5 text-sm rounded-lg"
+                )}
+                onChange={handleVariantChange}
+              >
+                <option value={BackgroundVariant.Lines}>線條</option>
+                <option value={BackgroundVariant.Dots}>點狀</option>
+                <option value={BackgroundVariant.Cross}>十字</option>
+              </select>
+            </div>
+            <button
               className={clsx(
-                "bg-white border border-gray-800 font-bold",
-                "block w-full p-2.5 text-sm rounded-lg"
+                "p-2.5 bg-white rounded border border-gray-800",
+                "hover:bg-gray-100 text-sm whitespace-nowrap"
               )}
-              onChange={handleVariantChange}
+              onClick={() => setIsSidebarVisible(!isSidebarVisible)}
             >
-              <option value={BackgroundVariant.Lines}>線條</option>
-              <option value={BackgroundVariant.Dots}>點狀</option>
-              <option value={BackgroundVariant.Cross}>十字</option>
-            </select>
+              {isSidebarVisible ? "✕" : "☰"}
+            </button>
           </Panel>
         </ReactFlow>
       </div>
       <Sidebar
+        isSidebarVisible={isSidebarVisible}
+        setIsSidebarVisible={setIsSidebarVisible}
         onInitialRestore={onInitialRestore}
         onSave={onSave}
         onRestore={onRestore}

@@ -1,165 +1,186 @@
-import { useState } from "react";
+import clsx from "clsx";
+import { DragEvent, useMemo, useState } from "react";
+import { FIRST_SAVE, SECOND_SAVE, THIRD_SAVE } from "../const/localStorageKey";
 import useStorageEventListener from "../hooks/useStorageEventListener";
 import { checkMultipleKeys } from "../utils/checkMultipleLocalStorageKey";
-import clsx from "clsx";
-import { FIRST_SAVE, SECOND_SAVE, THIRD_SAVE } from "../const/localStorageKey";
+
+type SidebarProps = {
+  isSidebarVisible: boolean;
+  setIsSidebarVisible: (visible: boolean) => void;
+  onInitialRestore: () => void;
+  onSave: (key: string) => void;
+  onRestore: (key: string) => void;
+  onDelete: (key: string) => void;
+};
+
+type SaveSlot = {
+  key: string;
+  label: string;
+};
+
+type DraggableNode = {
+  type: string;
+  label: string;
+  icon: string;
+};
+
+const SAVE_SLOTS: SaveSlot[] = [
+  { key: FIRST_SAVE, label: "資料一" },
+  { key: SECOND_SAVE, label: "資料二" },
+  { key: THIRD_SAVE, label: "資料三" },
+];
+
+const DRAGGABLE_NODES: DraggableNode[] = [
+  { type: "product-info-node", label: "商品", icon: "🏷️" },
+  { type: "extra-charge-node", label: "額外費用計算", icon: "💲" },
+  { type: "total-price-node", label: "總計", icon: "💳" },
+];
 
 // ! https://github.com/xyflow/xyflow/discussions/1021
 // ! https://github.com/xyflow/xyflow/issues/1323
-const Sidebar = ({ onInitialRestore, onSave, onRestore, onDelete }) => {
-  const [selectedSave, setSelectedSave] = useState(FIRST_SAVE);
-  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+const Sidebar = ({
+  isSidebarVisible,
+  setIsSidebarVisible,
+  onInitialRestore,
+  onSave,
+  onRestore,
+  onDelete,
+}: SidebarProps) => {
+  const [selectedSave, setSelectedSave] = useState<string>(FIRST_SAVE);
   const { isKeySet } = useStorageEventListener(selectedSave);
-  const keyStates = checkMultipleKeys([FIRST_SAVE, SECOND_SAVE, THIRD_SAVE]);
 
-  const handleSaveChange = (event) => {
+  const saveSlotStates = useMemo(
+    () => checkMultipleKeys(SAVE_SLOTS.map((slot) => slot.key)),
+    []
+  );
+
+  const handleSaveChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedSave(event.target.value);
   };
 
-  const onDragStart = (event, nodeType) => {
+  const onDragStart = (event: DragEvent<HTMLDivElement>, nodeType: string) => {
     event.dataTransfer.setData("application/reactflow", nodeType);
     event.dataTransfer.effectAllowed = "move";
   };
 
   return (
-    <>
-      {/* Toggle button for the sidebar */}
-      <button
-        className={clsx(
-          "fixed bottom-[170px] right-4 z-20 p-2 bg-white rounded shadow-md md:hidden border border-gray-800",
-          "hover:bg-gray-100"
-        )}
-        onClick={() => setIsSidebarVisible(!isSidebarVisible)}
-      >
-        {isSidebarVisible ? "關掉選單" : "打開選單"}
-      </button>
-
+    <div className='relative flex-shrink-0 h-full'>
       {/* Sidebar */}
       <aside
         className={clsx(
-          "fixed top-0 right-0 z-10 h-full bg-gray-50 border-l border-gray-300 p-4",
-          "transform transition-transform md:static md:translate-x-0",
-          isSidebarVisible ? "translate-x-0" : "translate-x-full"
+          "h-full bg-gray-50 border-l border-gray-300 overflow-hidden",
+          "transition-all duration-300",
+          isSidebarVisible ? "w-32 md:w-64" : "w-0 border-l-0"
         )}
       >
-        <div>
-          <div
-            className={clsx(
-              "md:text-xl text-sm mb-3 text-gray-700 font-bold",
-              "border-black border-b-2"
-            )}
-          >
-            <span className='hidden md:inline'>
-              你可以將這些節點拖到⬜面板上。
-            </span>
-            <span className='inline md:hidden text-red-500'>
-              拖曳節點沒辦法在觸控螢幕上使用
-            </span>
+        <div
+          className={clsx(
+            "w-32 md:w-64 h-full overflow-y-auto pt-16 px-4 pb-4 transition-opacity duration-300",
+            isSidebarVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+        >
+          {/* Controls section at top-left */}
+          <div className='mb-6'>
+            <div
+              className={clsx(
+                "text-sm p-2 mb-3 text-gray-700 font-bold text-center",
+                "border-black border-b-2"
+              )}
+            >
+              ⚙️ 節點操作
+            </div>
+            <select
+              value={selectedSave}
+              onChange={handleSaveChange}
+              className={clsx(
+                "text-sm w-full h-12 p-2 border border-gray-800 rounded mb-3",
+                "flex justify-center items-center cursor-pointer bg-white shadow-sm hover:bg-gray-100 font-bold",
+                "text-center"
+              )}
+            >
+              {SAVE_SLOTS.map((slot) => (
+                <option key={slot.key} value={slot.key}>
+                  {saveSlotStates[slot.key] ? "🗃️" : ""}
+                  {slot.label}
+                </option>
+              ))}
+            </select>
+            <div
+              className={clsx(
+                "text-sm h-12 p-2 border border-gray-800 rounded mb-3",
+                "flex justify-center items-center cursor-pointer shadow-sm hover:bg-gray-100 font-bold"
+              )}
+              onClick={() => onSave(selectedSave)}
+            >
+              💾 儲存目前資料
+            </div>
+            <div
+              className={clsx(
+                "text-sm h-12 p-2 border border-gray-800 rounded mb-3",
+                "flex justify-center items-center cursor-pointer shadow-sm font-bold",
+                isKeySet
+                  ? "bg-red-300 hover:bg-red-100"
+                  : "bg-white hover:bg-gray-100"
+              )}
+              onClick={() => onDelete(selectedSave)}
+            >
+              ❌ 刪除目前資料
+            </div>
+            <div
+              className={clsx(
+                "text-sm h-12 p-2 border border-gray-800 rounded mb-3",
+                "flex justify-center items-center cursor-pointer shadow-sm font-bold",
+                isKeySet
+                  ? "bg-green-300 hover:bg-green-100"
+                  : "bg-white hover:bg-gray-100"
+              )}
+              onClick={() => onRestore(selectedSave)}
+            >
+              🔄 恢復儲存的資料
+            </div>
+            <div
+              className={clsx(
+                "text-sm h-12 p-2 border border-gray-800 rounded mb-3",
+                "flex justify-center items-center cursor-pointer bg-white shadow-sm hover:bg-gray-100 font-bold"
+              )}
+              onClick={onInitialRestore}
+            >
+              ⤴️ 初始化節點
+            </div>
           </div>
-          <div
-            className={clsx(
-              "hidden md:flex md:text-xl text-sm h-12 p-2 border border-gray-800 rounded mb-3",
-              "flex justify-center items-center cursor-grab bg-white shadow-sm hover:bg-gray-100 font-bold"
-            )}
-            onDragStart={(event) => onDragStart(event, "product-info-node")}
-            draggable
-          >
-            🏷️ 商品
-          </div>
-          <div
-            className={clsx(
-              "hidden md:flex md:text-xl text-sm h-12 p-2 border border-gray-800 rounded mb-3",
-              "flex justify-center items-center cursor-grab bg-white shadow-sm hover:bg-gray-100 font-bold"
-            )}
-            onDragStart={(event) => onDragStart(event, "extra-charge-node")}
-            draggable
-          >
-            💲 額外費用計算
-          </div>
-          <div
-            className={clsx(
-              "hidden md:flex md:text-xl text-sm h-12 p-2 border border-gray-800 rounded mb-3",
-              "flex justify-center items-center cursor-grab bg-white shadow-sm hover:bg-gray-100 font-bold"
-            )}
-            onDragStart={(event) => onDragStart(event, "total-price-node")}
-            draggable
-          >
-            💳 總計
-          </div>
-        </div>
-        <div>
-          <div
-            className={clsx(
-              "md:text-xl text-sm p-2 mb-3 text-gray-700 font-bold text-center",
-              "border-black border-b-2"
-            )}
-          >
-            ⚙️ 節點操作
-          </div>
-          <select
-            value={selectedSave}
-            onChange={handleSaveChange}
-            className={clsx(
-              "md:text-xl text-sm w-full h-12 p-2 border border-gray-800 rounded mb-3",
-              "flex justify-center items-center cursor-pointer bg-white shadow-sm hover:bg-gray-100 font-bold",
-              "text-center"
-            )}
-          >
-            <option value='first-save'>
-              {keyStates[FIRST_SAVE] ? "🗃️" : ""}資料一
-            </option>
-            <option value='second-save'>
-              {keyStates[SECOND_SAVE] ? "🗃️" : ""}資料二
-            </option>
-            <option value='third-save'>
-              {keyStates[THIRD_SAVE] ? "🗃️" : ""}資料三
-            </option>
-          </select>
-          <div
-            className={clsx(
-              "md:text-xl text-sm h-12 p-2 border border-gray-800 rounded mb-3",
-              "flex justify-center items-center cursor-pointer shadow-sm hover:bg-gray-100 font-bold"
-            )}
-            onClick={() => onSave(selectedSave)}
-          >
-            💾 儲存目前資料
-          </div>
-          <div
-            className={clsx(
-              "md:text-xl text-sm h-12 p-2 border border-gray-800 rounded mb-3",
-              "flex justify-center items-center cursor-pointer shadow-sm font-bold",
-              isKeySet
-                ? "bg-red-400 hover:bg-red-200"
-                : "bg-white hover:bg-gray-100"
-            )}
-            onClick={() => onDelete(selectedSave)}
-          >
-            ❌ 刪除目前資料
-          </div>
-          <div
-            className={clsx(
-              "md:text-xl text-sm h-12 p-2 border border-gray-800 rounded mb-3",
-              "flex justify-center items-center cursor-pointer shadow-sm font-bold",
-              isKeySet
-                ? "bg-green-400 hover:bg-green-200"
-                : "bg-white hover:bg-gray-100"
-            )}
-            onClick={() => onRestore(selectedSave)}
-          >
-            🔄 恢復儲存的資料
-          </div>
-          <div
-            className={clsx(
-              "md:text-xl text-sm h-12 p-2 border border-gray-800 rounded mb-3",
-              "flex justify-center items-center cursor-pointer bg-white shadow-sm hover:bg-gray-100 font-bold"
-            )}
-            onClick={onInitialRestore}
-          >
-            ⤴️ 初始化節點
+
+          {/* Draggable nodes section */}
+          <div>
+            <div
+              className={clsx(
+                "text-sm mb-3 text-gray-700 font-bold",
+                "border-black border-b-2"
+              )}
+            >
+              <span className='hidden md:inline'>
+                你可以將這些節點拖到⬜面板上。
+              </span>
+              <span className='inline md:hidden text-red-500'>
+                拖曳節點沒辦法在觸控螢幕上使用
+              </span>
+            </div>
+            {DRAGGABLE_NODES.map((node) => (
+              <div
+                key={node.type}
+                className={clsx(
+                  "hidden md:flex text-sm h-12 p-2 border border-gray-800 rounded mb-3",
+                  "flex justify-center items-center cursor-grab bg-white shadow-sm hover:bg-gray-100 font-bold"
+                )}
+                onDragStart={(event) => onDragStart(event, node.type)}
+                draggable
+              >
+                {node.icon} {node.label}
+              </div>
+            ))}
           </div>
         </div>
       </aside>
-    </>
+    </div>
   );
 };
 
